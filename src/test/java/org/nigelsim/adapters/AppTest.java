@@ -95,4 +95,30 @@ public class AppTest extends TestCase {
 
 		assertEquals(200, ransom.getCash());
 	}
+	
+	/**
+	 * Example adapted from
+	 * http://martinaspeli.net/articles/a-java-component-architecture
+	 * 
+	 * @throws InvocationTargetException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws NoSuchMethodException
+	 * @throws IllegalArgumentException
+	 * @throws SecurityException
+	 * @throws NotAnAdapterException 
+	 */
+	public void testScanning() throws SecurityException, IllegalArgumentException,
+			NoSuchMethodException, InstantiationException,
+			IllegalAccessException, InvocationTargetException, NotAnAdapterException {
+		AdapterManager.getInstance().scan(true);
+		Ransom ransom = new Ransom();
+		ransom.setCash(0);
+
+		IPayment payment = (IPayment) AdapterManager.getInstance().adapt(
+				IPayment.class, ransom);
+		payment.pay();
+
+		assertTrue(0 != ransom.getCash());
+	}
 }
