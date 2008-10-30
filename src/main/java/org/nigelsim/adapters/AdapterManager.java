@@ -23,8 +23,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -38,10 +40,10 @@ import java.util.jar.JarFile;
  */
 public class AdapterManager {
 	private static AdapterManager adapterManager = new AdapterManager();
-	private static Map<Class, Map<Class, Class>> interfaceMap;
+	private static Map<Class, Map<String, List<Class>>> interfaceMap;
 
 	private AdapterManager() {
-		interfaceMap = new HashMap<Class, Map<Class, Class>>();
+		interfaceMap = new HashMap<Class, Map<String, List<Class>>>();
 	}
 
 	/**
@@ -50,17 +52,29 @@ public class AdapterManager {
 	 * @param iface
 	 * @param obj
 	 * @param factory
+	 * @throws NotAnAdapterException 
 	 */
-	public void register(Class iface, Class obj, Class factory)
+	public void register(Class iface, Class factory) throws NotAnAdapterException {
+		register(iface, "", factory);
+	}
+	
+	public void register(Class iface, String name, Class factory)
 			throws NotAnAdapterException {
-		Map<Class, Class> factories;
+		Map<String, List<Class>> factories;
 		if (!interfaceMap.containsKey(iface)) {
-			factories = new HashMap<Class, Class>();
+			factories = new HashMap<String, List<Class>>();
 			interfaceMap.put(iface, factories);
 		} else {
 			factories = interfaceMap.get(iface);
 		}
-		factories.put(obj, factory);
+		List<Class> namedFactories;
+		if (factories.containsKey(name)) {
+			namedFactories = factories.get(name);
+		} else {
+			namedFactories = new ArrayList<Class>();
+			factories.put(name, namedFactories);
+		}
+		namedFactories.add(factory);
 	}
 
 	/**
@@ -73,10 +87,10 @@ public class AdapterManager {
 	public void register(Class factory) throws NotAnAdapterException {
 		Adapter annotation = (Adapter) factory.getAnnotation(Adapter.class);
 		if (annotation != null) {
-			Class obj = annotation.forClass();
+			String name = annotation.name();
 
 			for (Class iface : factory.getInterfaces()) {
-				register(iface, obj, factory);
+				register(iface, name, factory);
 			}
 
 		} else {
@@ -162,6 +176,10 @@ public class AdapterManager {
 	 * @param iface
 	 * @param obj
 	 * @return
+	 * @throws InvocationTargetException 
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
+	 * @throws IllegalArgumentException 
 	 * @throws SecurityException
 	 * @throws NoSuchMethodException
 	 * @throws IllegalArgumentException
@@ -169,18 +187,36 @@ public class AdapterManager {
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-	public Object adapt(Class iface, Object obj) throws SecurityException,
-			NoSuchMethodException, IllegalArgumentException,
-			InstantiationException, IllegalAccessException,
-			InvocationTargetException {
-		Map<Class, Class> factories = interfaceMap.get(iface);
-		if (factories != null) {
-			Class factory = factories.get(obj.getClass());
-			Constructor constructor = factory.getConstructor(obj.getClass());
-			return constructor.newInstance(obj);
-		} else {
+	public Object adapt(Class iface, Object ... arguments) throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException {
+		return adapt(iface, "", arguments);
+	}
+	
+	public Object adapt(Class iface, String name, Object ... arguments) throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException {
+		Map<String, List<Class>> factories = interfaceMap.get(iface);
+		if  (factories == null) 
 			return null;
+		List<Class> namedFactories = factories.get(name);
+		if (namedFactories == null)
+			return null;
+		
+		// Copy the signature out of the arguments
+		Class[] signature = new Class[arguments.length];
+		for (int i = 0 ; i < arguments.length ; i++) {
+			signature[i] = arguments[i].getClass();
 		}
+		
+		if (factories != null) {
+			for (Class factory: namedFactories) {
+				try {
+					Constructor constructor = factory.getConstructor(signature);
+					return constructor.newInstance(arguments);
+				} catch (SecurityException e) {
+					e.printStackTrace();
+				} catch (NoSuchMethodException e) {}
+				
+			}
+		}
+		return null;
 	}
 
 	public static AdapterManager getInstance() {

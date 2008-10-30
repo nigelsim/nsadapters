@@ -21,7 +21,7 @@ package org.nigelsim.adapters;
  * @author nigel
  *
  */
-@Adapter(forClass=Ransom.class)
+@Adapter(name="test2")
 public class RansomPayment2 implements IPayment {
 
     private Ransom ransom;

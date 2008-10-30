@@ -58,7 +58,7 @@ public class AppTest extends TestCase {
 	public void testExplicitAdapter() throws SecurityException, IllegalArgumentException,
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, NotAnAdapterException {
-		AdapterManager.getInstance().register(IPayment.class, Ransom.class,
+		AdapterManager.getInstance().register(IPayment.class,
 				RansomPayment.class);
 		Ransom ransom = new Ransom();
 		ransom.setCash(0);
@@ -90,7 +90,7 @@ public class AppTest extends TestCase {
 		ransom.setCash(0);
 
 		IPayment payment = (IPayment) AdapterManager.getInstance().adapt(
-				IPayment.class, ransom);
+				IPayment.class, "test2", ransom);
 		payment.pay();
 
 		assertEquals(200, ransom.getCash());

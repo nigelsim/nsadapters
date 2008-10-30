@@ -27,5 +27,5 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Adapter {
-	Class forClass();
+	String name() default "";
 }
