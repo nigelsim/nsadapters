@@ -7,7 +7,7 @@
 	<version>0.1-SNAPSHOT</version>
 	<name>adapters</name>
 	<url>http://projects.nigelsim.org</url>
-	
+
 	<developers>
 		<developer>
 			<name>Nigel Sim</name>
@@ -36,7 +36,7 @@
 			<id>nigelsim</id>
 			<name>Snapshots Server</name>
 			<url>
-				scp://codered.dreamhost.com/home/nigelsim/projects.nigelsim.org/maven
+				scp://codered.dreamhost.com/home/nigelsim/projects.nigelsim.org/maven-snapshots
 			</url>
 		</snapshotRepository>
 	</distributionManagement>
