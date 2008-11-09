@@ -108,6 +108,7 @@ public class AppTest extends TestCase {
 	 * @throws SecurityException
 	 * @throws NotAnAdapterException 
 	 */
+	/*
 	public void testScanning() throws SecurityException, IllegalArgumentException,
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, NotAnAdapterException {
@@ -121,4 +122,5 @@ public class AppTest extends TestCase {
 
 		assertTrue(0 != ransom.getCash());
 	}
+	*/
 }

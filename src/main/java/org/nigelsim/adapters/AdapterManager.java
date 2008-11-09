@@ -101,8 +101,7 @@ public class AdapterManager {
 	/**
 	 * Scans for adapters on the classpath.
 	 */
-	public void scan(boolean inJars) {
-		String packageName = this.getClass().getPackage().getName();
+	public void scan(String packageName, boolean inJars) {
 		String packagePath = packageName.replace('.', '/');
 		URL[] classpath = ((URLClassLoader) ClassLoader.getSystemClassLoader())
 				.getURLs();
@@ -144,6 +143,7 @@ public class AdapterManager {
 				} else { // directory
 					File packageDirectory = new File(file.getPath() + "/"
 							+ packagePath);
+					if (packageDirectory.exists()) {
 					for (File f : packageDirectory.listFiles()) {
 						try {
 							if (f.getPath().endsWith(".class")) {
@@ -162,6 +162,7 @@ public class AdapterManager {
 						} catch (NotAnAdapterException e) {
 						}
 					}
+				}
 				}
 
 			} catch (URISyntaxException e1) {
