@@ -95,7 +95,7 @@ public class AppTest extends TestCase {
 		Ransom ransom = new Ransom();
 		ransom.setCash(0);
 
-		IPayment payment = (IPayment) AdapterManager.getInstance().adapt(
+		IPayment payment = (IPayment) AdapterManager.getInstance().adaptByName(
 				IPayment.class, "test2", ransom);
 		payment.pay();
 

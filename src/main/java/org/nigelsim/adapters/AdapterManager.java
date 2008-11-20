@@ -274,10 +274,10 @@ public class AdapterManager {
 	public Object adapt(Class iface, Object... arguments)
 			throws IllegalArgumentException, InstantiationException,
 			IllegalAccessException, InvocationTargetException {
-		return adapt(iface, "", arguments);
+		return adaptByName(iface, "", arguments);
 	}
 
-	public Object adapt(Class iface, String name, Object... arguments)
+	public Object adaptByName(Class iface, String name, Object... arguments)
 			throws IllegalArgumentException, InstantiationException,
 			IllegalAccessException, InvocationTargetException {
 		Map<String, List<Class>> factories = interfaceMap.get(iface);
