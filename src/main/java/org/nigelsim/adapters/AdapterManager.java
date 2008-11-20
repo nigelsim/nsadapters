@@ -113,60 +113,28 @@ public class AdapterManager {
 	public void scan() {
 		List<String> packages = new ArrayList<String>();
 		String fileName = "META-INF/adapters.txt";
-		URL[] classpath = ((URLClassLoader) ClassLoader.getSystemClassLoader())
-				.getURLs();
-
-		for (URL url : classpath) {
-			File file;
-			try {
-				file = new File(url.toURI());
-				if (file.getPath().endsWith(".jar")) {
-					JarFile jarFile = new JarFile(file);
-					for (Enumeration<JarEntry> entries = jarFile.entries(); entries
-							.hasMoreElements();) {
-						String entryName = (entries.nextElement()).getName();
-						if (entryName.equals(fileName)) {
-							ClassLoader classLoader = new URLClassLoader(
-									new URL[] { url });
-							String className = entryName.replace('/', '.')
-									.substring(0, entryName.lastIndexOf('.'));
-							InputStream is = classLoader
-									.getResourceAsStream(className);
-							readPackages(packages, is);
-
-						}
-					}
-				} else { // directory
-					File packageDirectory = new File(file.getPath() + "/"
-							+ fileName);
-					if (packageDirectory.exists()) {
-						ClassLoader classLoader = new URLClassLoader(
-								new URL[] { url });
-						InputStream is = classLoader
-								.getResourceAsStream(fileName);
-						readPackages(packages, is);
-					}
+		Enumeration<URL> classpath;
+		try {
+			classpath = ClassLoader.getSystemResources(fileName);
+			while (classpath.hasMoreElements()) {
+				URL url = classpath.nextElement();
+				BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
+				String line;
+				while ((line = r.readLine()) != null) {
+					packages.add(line.trim());
 				}
-
-			} catch (URISyntaxException e1) {
-			} catch (IOException e) {
+				r.close();
 			}
-		}
-		
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		};
+
 		for (String p: packages) {
 			scan(p, true);
 		}
 	}
 
-	private void readPackages(List<String> packages, InputStream is)
-			throws IOException {
-		BufferedReader r = new BufferedReader(new InputStreamReader(is));
-		String line;
-		while ((line = r.readLine()) != null) {
-			packages.add(line.trim());
-		}
-		r.close();
-	}
 
 	/**
 	 * Scans for adapters on the classpath.

@@ -74,6 +74,7 @@ public class AppTest extends TestCase {
 		payment.pay();
 
 		assertEquals(100, ransom.getCash());
+		AdapterManager.getInstance().reset();
 	}
 	
 	/**
@@ -100,6 +101,7 @@ public class AppTest extends TestCase {
 		payment.pay();
 
 		assertEquals(200, ransom.getCash());
+		AdapterManager.getInstance().reset();
 	}
 	
 	/**
@@ -126,5 +128,6 @@ public class AppTest extends TestCase {
 		payment.pay();
 
 		assertEquals(100, ransom.getCash());
+		AdapterManager.getInstance().reset();
 	}
 }
