@@ -26,6 +26,12 @@ import junit.framework.TestSuite;
  * Unit test for simple App.
  */
 public class AppTest extends TestCase {
+	@Override
+	protected void tearDown() throws Exception {
+		super.tearDown();
+		AdapterManager.getInstance().reset();
+	}
+
 	/**
 	 * Create the test case
 	 * 
@@ -108,11 +114,10 @@ public class AppTest extends TestCase {
 	 * @throws SecurityException
 	 * @throws NotAnAdapterException 
 	 */
-	/*
 	public void testScanning() throws SecurityException, IllegalArgumentException,
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, NotAnAdapterException {
-		AdapterManager.getInstance().scan(true);
+		AdapterManager.getInstance().scan();
 		Ransom ransom = new Ransom();
 		ransom.setCash(0);
 
@@ -120,7 +125,6 @@ public class AppTest extends TestCase {
 				IPayment.class, ransom);
 		payment.pay();
 
-		assertTrue(0 != ransom.getCash());
+		assertEquals(100, ransom.getCash());
 	}
-	*/
 }

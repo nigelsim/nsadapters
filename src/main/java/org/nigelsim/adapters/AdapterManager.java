@@ -16,8 +16,13 @@
  */
 package org.nigelsim.adapters;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
@@ -40,7 +45,7 @@ import java.util.jar.JarFile;
  */
 public class AdapterManager {
 	private static AdapterManager adapterManager = new AdapterManager();
-	private static Map<Class, Map<String, List<Class>>> interfaceMap;
+	private Map<Class, Map<String, List<Class>>> interfaceMap;
 
 	private AdapterManager() {
 		interfaceMap = new HashMap<Class, Map<String, List<Class>>>();
@@ -52,12 +57,13 @@ public class AdapterManager {
 	 * @param iface
 	 * @param obj
 	 * @param factory
-	 * @throws NotAnAdapterException 
+	 * @throws NotAnAdapterException
 	 */
-	public void register(Class iface, Class factory) throws NotAnAdapterException {
+	public void register(Class iface, Class factory)
+			throws NotAnAdapterException {
 		register(iface, "", factory);
 	}
-	
+
 	public void register(Class iface, String name, Class factory)
 			throws NotAnAdapterException {
 		Map<String, List<Class>> factories;
@@ -96,6 +102,70 @@ public class AdapterManager {
 		} else {
 			throw new NotAnAdapterException("Annotation not present");
 		}
+	}
+
+	/**
+	 * This scan method looks on the classpath for a files called
+	 * META-INF/adapters.txt. This file contains lists of packages which need to
+	 * be scanned for actual adapters.
+	 * 
+	 */
+	public void scan() {
+		List<String> packages = new ArrayList<String>();
+		String fileName = "META-INF/adapters.txt";
+		URL[] classpath = ((URLClassLoader) ClassLoader.getSystemClassLoader())
+				.getURLs();
+
+		for (URL url : classpath) {
+			File file;
+			try {
+				file = new File(url.toURI());
+				if (file.getPath().endsWith(".jar")) {
+					JarFile jarFile = new JarFile(file);
+					for (Enumeration<JarEntry> entries = jarFile.entries(); entries
+							.hasMoreElements();) {
+						String entryName = (entries.nextElement()).getName();
+						if (entryName.equals(fileName)) {
+							ClassLoader classLoader = new URLClassLoader(
+									new URL[] { url });
+							String className = entryName.replace('/', '.')
+									.substring(0, entryName.lastIndexOf('.'));
+							InputStream is = classLoader
+									.getResourceAsStream(className);
+							readPackages(packages, is);
+
+						}
+					}
+				} else { // directory
+					File packageDirectory = new File(file.getPath() + "/"
+							+ fileName);
+					if (packageDirectory.exists()) {
+						ClassLoader classLoader = new URLClassLoader(
+								new URL[] { url });
+						InputStream is = classLoader
+								.getResourceAsStream(fileName);
+						readPackages(packages, is);
+					}
+				}
+
+			} catch (URISyntaxException e1) {
+			} catch (IOException e) {
+			}
+		}
+		
+		for (String p: packages) {
+			scan(p, true);
+		}
+	}
+
+	private void readPackages(List<String> packages, InputStream is)
+			throws IOException {
+		BufferedReader r = new BufferedReader(new InputStreamReader(is));
+		String line;
+		while ((line = r.readLine()) != null) {
+			packages.add(line.trim());
+		}
+		r.close();
 	}
 
 	/**
@@ -144,25 +214,29 @@ public class AdapterManager {
 					File packageDirectory = new File(file.getPath() + "/"
 							+ packagePath);
 					if (packageDirectory.exists()) {
-					for (File f : packageDirectory.listFiles()) {
-						try {
-							if (f.getPath().endsWith(".class")) {
-								String className = packageName
-										+ "."
-										+ f.getName().substring(0,
-												f.getName().lastIndexOf('.'));
-								ClassLoader classLoader = new URLClassLoader(
-										new URL[] { url });
-								Class clazz = classLoader.loadClass(className);
-								if (clazz.isAnnotationPresent(Adapter.class)) {
-									register(clazz);
+						for (File f : packageDirectory.listFiles()) {
+							try {
+								if (f.getPath().endsWith(".class")) {
+									String className = packageName
+											+ "."
+											+ f.getName().substring(
+													0,
+													f.getName()
+															.lastIndexOf('.'));
+									ClassLoader classLoader = new URLClassLoader(
+											new URL[] { url });
+									Class clazz = classLoader
+											.loadClass(className);
+									if (clazz
+											.isAnnotationPresent(Adapter.class)) {
+										register(clazz);
+									}
 								}
+							} catch (ClassNotFoundException e) {
+							} catch (NotAnAdapterException e) {
 							}
-						} catch (ClassNotFoundException e) {
-						} catch (NotAnAdapterException e) {
 						}
 					}
-				}
 				}
 
 			} catch (URISyntaxException e1) {
@@ -172,15 +246,24 @@ public class AdapterManager {
 	}
 
 	/**
+	 * Clears all adapter indexes.
+	 * 
+	 * Not really useful outside unit testing.
+	 */
+	public void reset() {
+		interfaceMap.clear();
+	}
+
+	/**
 	 * Get an adapter to the given interface for the object.
 	 * 
 	 * @param iface
 	 * @param obj
 	 * @return
-	 * @throws InvocationTargetException 
-	 * @throws IllegalAccessException 
-	 * @throws InstantiationException 
-	 * @throws IllegalArgumentException 
+	 * @throws InvocationTargetException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws IllegalArgumentException
 	 * @throws SecurityException
 	 * @throws NoSuchMethodException
 	 * @throws IllegalArgumentException
@@ -188,33 +271,38 @@ public class AdapterManager {
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-	public Object adapt(Class iface, Object ... arguments) throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException {
+	public Object adapt(Class iface, Object... arguments)
+			throws IllegalArgumentException, InstantiationException,
+			IllegalAccessException, InvocationTargetException {
 		return adapt(iface, "", arguments);
 	}
-	
-	public Object adapt(Class iface, String name, Object ... arguments) throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException {
+
+	public Object adapt(Class iface, String name, Object... arguments)
+			throws IllegalArgumentException, InstantiationException,
+			IllegalAccessException, InvocationTargetException {
 		Map<String, List<Class>> factories = interfaceMap.get(iface);
-		if  (factories == null) 
+		if (factories == null)
 			return null;
 		List<Class> namedFactories = factories.get(name);
 		if (namedFactories == null)
 			return null;
-		
+
 		// Copy the signature out of the arguments
 		Class[] signature = new Class[arguments.length];
-		for (int i = 0 ; i < arguments.length ; i++) {
+		for (int i = 0; i < arguments.length; i++) {
 			signature[i] = arguments[i].getClass();
 		}
-		
+
 		if (factories != null) {
-			for (Class factory: namedFactories) {
+			for (Class factory : namedFactories) {
 				try {
 					Constructor constructor = factory.getConstructor(signature);
 					return constructor.newInstance(arguments);
 				} catch (SecurityException e) {
 					e.printStackTrace();
-				} catch (NoSuchMethodException e) {}
-				
+				} catch (NoSuchMethodException e) {
+				}
+
 			}
 		}
 		return null;
